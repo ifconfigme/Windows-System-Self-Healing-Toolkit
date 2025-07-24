@@ -110,10 +110,4 @@ Suggestions, issues, improvements, and pull requests are welcome!
 
 ---
 
-## Feedback
-
-Did this script help you, or inspire a new tool? Let us know—your insights help keep the project alive and growing.
-
----
-
 *May your system be smooth, your sessions uninterrupted, and your curiosity never exhausted.*
