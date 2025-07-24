@@ -170,6 +170,11 @@ Function Reset-WindowsUpdate {
 Function Reset-MicrosoftStore { Run-Command "wsreset.exe" "Clear Microsoft Store Cache" }
 
 Function Reset-Network {
+    Show-Section "Reset Network Stack"
+    # First confirmation prompt
+    If (-not (Confirm-Action "Are you sure you want to reset the entire network stack?")) { return }
+    # Second confirmation prompt
+    If (-not (Confirm-Action "This will reset network components and may disrupt connections. Continue?")) { return }
     Run-Command "netsh int ip reset" "Network IP Stack Reset"
     Run-Command "netsh winsock reset" "Winsock Reset"
     Run-Command "ipconfig /flushdns" "Flush DNS Cache"
@@ -290,18 +295,25 @@ Function Clean-TempFiles {
 Function Check-WindowsUpdates {
     Show-Section "Check for Windows Updates"
     Try {
-        # Shows last 10 entries of WindowsUpdate.log as a simple approach
-        $logPath = "$env:SystemRoot\WindowsUpdate.log"
-        if (Test-Path $logPath) {
-            Get-Content $logPath -Tail 10 | Out-Host
-            Write-Log "Displayed last 10 entries of WindowsUpdate.log." "INFO"
+        $updateLogPath = "$env:USERPROFILE\Desktop\WindowsUpdate.log"
+        Write-Host "Windows now stores Windows Update logs in ETW trace format." -ForegroundColor Yellow
+        Write-Host "To view update logs, a readable log will be generated on your Desktop using Get-WindowsUpdateLog."
+        if (Confirm-Action "Do you want to generate WindowsUpdate.log on your Desktop now? (y/n): ") {
+            Try {
+                Get-WindowsUpdateLog -LogPath $updateLogPath | Out-Null
+                Write-Host "Log generated at $updateLogPath" -ForegroundColor Green
+                Write-Log "Generated WindowsUpdate.log at $updateLogPath" "INFO"
+            } Catch {
+                Write-Host "Failed to generate WindowsUpdate.log. See Microsoft documentation for troubleshooting." -ForegroundColor Red
+                Write-Log "Failed to generate WindowsUpdate.log. Error: $_" "ERROR"
+            }
         } else {
-            Write-Log "WindowsUpdate.log not found." "WARN"
-            Write-Host "WindowsUpdate.log not found." -ForegroundColor Yellow
+            Write-Host "Skipped generating WindowsUpdate.log." -ForegroundColor Yellow
+            Write-Log "Skipped generating WindowsUpdate.log." "INFO"
         }
     } Catch {
-        Write-Log "Failed to read WindowsUpdate.log. Error: $_" "ERROR"
-        Write-Host "Failed to check Windows Update log." -ForegroundColor Red
+        Write-Host "Unexpected error checking for Windows Update log." -ForegroundColor Red
+        Write-Log "Unexpected error in Check-WindowsUpdates: $_" "ERROR"
     }
     Pause-Continue
 }
@@ -337,24 +349,24 @@ Function Check-RestartCriticalServices {
 
 # ----- MENU -----
 $menu = @{
-    "1" = @{Label="Show Basic System Info";         Action={Show-SystemInfo}}
-    "2" = @{Label="Create System Restore Point";    Action={Create-RestorePoint}}
-    "3" = @{Label="Run System File Checker (SFC)";  Action={Run-SFC}}
-    "4" = @{Label="Run DISM Health Restore";        Action={Run-DISM}}
-    "5" = @{Label="Check Disk (chkdsk)";            Action={Run-CHKDSK}}
-    "6" = @{Label="Reset Windows Update";           Action={Reset-WindowsUpdate}}
-    "7" = @{Label="Clear Microsoft Store Cache";    Action={Reset-MicrosoftStore}}
-    "8" = @{Label="Reset Network Stack";            Action={Reset-Network}}
-    "9" = @{Label="Rebuild Icon Cache";             Action={Rebuild-IconCache}}
-   "10" = @{Label="Re-register All Windows Apps";   Action={Reregister-WindowsApps}}
-   "12" = @{Label="Run Network Diagnostics";           Action={Test-NetworkDiagnostics}}
-   "13" = @{Label="Show Disk Usage";                  Action={Show-DiskUsage}}
-   "14" = @{Label="Clean Temp Files";                 Action={Clean-TempFiles}}
-   "15" = @{Label="Check for Windows Updates";        Action={Check-WindowsUpdates}}
-   "16" = @{Label="Check & Restart Critical Services";Action={Check-RestartCriticalServices}}
-   "11" = @{Label="Repair Windows Store App";       Action={Reset-WindowsStoreApp}}
-   "H"  = @{Label="Help/About";                     Action={Show-Help}}
-   "Q"  = @{Label="Quit";                           Action={
+    "1"  = @{Label="Show Basic System Info";         Action={Show-SystemInfo}}
+    "2"  = @{Label="Create System Restore Point";    Action={Create-RestorePoint}}
+    "3"  = @{Label="Run System File Checker (SFC)";  Action={Run-SFC}}
+    "4"  = @{Label="Run DISM Health Restore";        Action={Run-DISM}}
+    "5"  = @{Label="Check Disk (chkdsk)";            Action={Run-CHKDSK}}
+    "6"  = @{Label="Reset Windows Update";           Action={Reset-WindowsUpdate}}
+    "7"  = @{Label="Clear Microsoft Store Cache";    Action={Reset-MicrosoftStore}}
+    "8"  = @{Label="Reset Network Stack";            Action={Reset-Network}}
+    "9"  = @{Label="Rebuild Icon Cache";             Action={Rebuild-IconCache}}
+    "10" = @{Label="Re-register All Windows Apps";   Action={Reregister-WindowsApps}}
+    "11" = @{Label="Repair Windows Store App";       Action={Reset-WindowsStoreApp}}
+    "12" = @{Label="Run Network Diagnostics";        Action={Test-NetworkDiagnostics}}
+    "13" = @{Label="Show Disk Usage";                Action={Show-DiskUsage}}
+    "14" = @{Label="Clean Temp Files";               Action={Clean-TempFiles}}
+    "15" = @{Label="Check for Windows Updates";      Action={Check-WindowsUpdates}}
+    "16" = @{Label="Check & Restart Critical Services"; Action={Check-RestartCriticalServices}}
+    "H"  = @{Label="Help/About";                     Action={Show-Help}}
+    "Q"  = @{Label="Quit";                           Action={
         Write-Log $Strings.ExitMessage "INFO"
         Stop-Transcript | Out-Null
         Write-Host "$($Strings.LogFileSaved) $LogFile" -ForegroundColor Cyan
