@@ -78,9 +78,10 @@ Whether you’re troubleshooting problems, ensuring system reliability before an
 
 ## Who Should Use This?
 
-- **Creators:** Musicians, artists, writers—anyone seeking a “quiet” and reliable system.
-- **Technologists:** Those who value transparency, control, and reproducibility.
-- **Power Users:** Anyone maintaining, repairing, or prepping a Windows system for peak performance.
+- **End Users:** Anyone seeking to diagnose or repair a sluggish or problematic Windows system.
+- **Creators:** Musicians, producers, writers, and other creatives who rely on a stable, responsive machine.
+- **Technologists:** Users who value transparency, control, and the ability to audit or customize repairs.
+- **Power Users:** Those maintaining, optimizing, or preparing a system for demanding tasks.
 
 ---
 
