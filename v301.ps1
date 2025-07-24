@@ -1,8 +1,19 @@
-<# Windows System First Aid Toolkit — v2.0.1 #>
-
+<# Windows System First Aid Toolkit — v3.0.1 #>
+<#
+.SYNOPSIS
+    Windows System First Aid Toolkit
+.DESCRIPTION
+    Diagnostic and repair script for Windows 10/11—featuring admin rights check, logging with levels, confirmation prompts,
+    modular design, robust error handling, a Help menu, and a clear version identifier.
+    Ready for collaborative extension and future localization.
+.NOTES
+    Version: 3.0.1
+    Author: Daniel Monbrod & ChatGPT
+    Date: 2025-07-24
+#>
 # ----- SETTINGS -----
 $SessionActions = @()
-$ScriptVersion = "2.0.1"
+$ScriptVersion = "3.0.1"
 $ScriptName = "Windows System First Aid Toolkit"
 $defaultLogFile = Join-Path -Path $env:TEMP -ChildPath ("WinSystemFirstAid-{0}.log" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
 $SectionHeaderColor = "Cyan"
