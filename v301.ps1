@@ -6,37 +6,34 @@ $ScriptVersion = "2.0.1"
 $ScriptName = "Windows System First Aid Toolkit"
 $defaultLogFile = Join-Path -Path $env:TEMP -ChildPath ("WinSystemFirstAid-{0}.log" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
 $SectionHeaderColor = "Cyan"
-$logPathInput = Read-Host "Enter a custom log file path (e.g., C:\Logs\MyToolkit.log), or press Enter to use the default in `$env:TEMP:"
-$illegalChars = [System.IO.Path]::GetInvalidPathChars() + [System.IO.Path]::GetInvalidFileNameChars()
-if (-not [string]::IsNullOrWhiteSpace($logPathInput)) {
-    if ($logPathInput.IndexOfAny($illegalChars) -ge 0) {
-        Write-Host "The path contains invalid characters. Using default log file path." -ForegroundColor Yellow
-        $LogFile = $defaultLogFile
-    }
-    else {
-        $resolvedPath = Resolve-Path -Path $logPathInput -ErrorAction SilentlyContinue
-        if ($resolvedPath) {
-            $LogFile = $resolvedPath.Path
+function Get-LogFilePath {
+    param (
+        [string]$DefaultLogFile
+    )
+    $logPathInput = Read-Host "Enter a custom log file path (e.g., C:\Logs\MyToolkit.log), or press Enter to use the default in `$env:TEMP:"
+    $illegalChars = [System.IO.Path]::GetInvalidPathChars() + [System.IO.Path]::GetInvalidFileNameChars()
+    if (-not [string]::IsNullOrWhiteSpace($logPathInput)) {
+        if ($logPathInput.IndexOfAny($illegalChars) -ge 0) {
+            Write-Host "The path contains invalid characters. Using default log file path." -ForegroundColor Yellow
+            return $DefaultLogFile
         }
-        else {
-            $directory = Split-Path -Path $logPathInput -Parent
-            if ($directory -and -not (Test-Path -Path $directory)) {
-                Try { New-Item -Path $directory -ItemType Directory -Force | Out-Null }
-                Catch {
-                    Write-Host "Failed to create directory: $directory. Using default log file path." -ForegroundColor Yellow
-                    $LogFile = $defaultLogFile
-                }
-            }
-            if (-not $LogFile -or -not $directory -or -not (Test-Path -Path $directory)) { 
-                $LogFile = $defaultLogFile 
-            } else {
-                $LogFile = $logPathInput
+        $directory = Split-Path -Path $logPathInput -Parent
+        if ($directory -and -not (Test-Path -Path $directory)) {
+            try {
+                New-Item -Path $directory -ItemType Directory -Force | Out-Null
+            } catch {
+                Write-Host "Failed to create directory: $directory. Using default log file path." -ForegroundColor Yellow
+                return $DefaultLogFile
             }
         }
+        return $logPathInput
+    } else {
+        Write-Host "No custom log path entered. Using default log file path."
+        return $DefaultLogFile
     }
 }
-else { $LogFile = $defaultLogFile }
-
+$defaultLogFile = Join-Path $env:TEMP ("WinSystemFirstAid-{0}.log" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
+$LogFile = Get-LogFilePath -DefaultLogFile $defaultLogFile
 # ----- STRINGS -----
 $Strings = @{
     ScriptName       = $ScriptName
@@ -87,7 +84,6 @@ If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     Read-Host $Strings.PressEnter | Out-Null
     Exit
 }
-# Ensure log file exists before writing
 if (-not (Test-Path $LogFile)) {
     New-Item -Path $LogFile -ItemType File -Force | Out-Null
 }
@@ -102,7 +98,7 @@ Function Confirm-Action ($Prompt) {
     }
     return $true
 }
-Function Pause-Continue { Read-Host $Strings.PressEnter | Out-Null }
+Function Wait-Continue { Read-Host $Strings.PressEnter | Out-Null }
 Function Show-Section ($msg) { Write-Host "`n==== $msg ==== `n" -ForegroundColor $SectionHeaderColor }
 
 # ----- REPAIR/DIAGNOSTIC FUNCTIONS -----
@@ -119,10 +115,10 @@ Function Show-SystemInfo {
         $SessionActions += "Failed to retrieve system info"
         Write-Host "$($Strings.Failure): Could not retrieve system info." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
-Function Create-RestorePoint {
+Function New-RestorePoint {
     Show-Section "System Restore Point"
     If (-not (Confirm-Action $Strings.ConfirmAction)) { return }
     Try {
@@ -137,10 +133,10 @@ Function Create-RestorePoint {
         $SessionActions += "Failed to create restore point"
         Write-Host "$($Strings.Failure): Could not create restore point." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
-Function Run-Command {
+Function Invoke-CommandAction {
     param([string]$cmd, [string]$desc)
     Show-Section $desc
     Write-Host "`nPlease wait, this may take several minutes..." -ForegroundColor Yellow
@@ -158,10 +154,10 @@ Function Run-Command {
     Pause-Continue
 }
 
-Function Run-SFC { Run-Command "sfc /scannow" "System File Checker (SFC)" }
-Function Run-DISM { Run-Command "DISM /Online /Cleanup-Image /RestoreHealth" "DISM Health Restore" }
+Function Invoke-SFC { Invoke-CommandAction "sfc /scannow" "System File Checker (SFC)" }
+Function Invoke-DISM { Invoke-CommandAction "DISM /Online /Cleanup-Image /RestoreHealth" "DISM Health Restore" }
 
-Function Run-CHKDSK {
+Function Invoke-CHKDSK {
     Show-Section "Check Disk"
     $drive = Read-Host "Enter the drive letter to check (e.g., C), or press Enter for default (C):"
     if (-not $drive) { $drive = "C" }
@@ -207,36 +203,36 @@ Function Reset-WindowsUpdate {
     Pause-Continue
 }
 
-Function Reset-MicrosoftStore { Run-Command "wsreset.exe" "Clear Microsoft Store Cache" }
+Function Reset-MicrosoftStore { Invoke-CommandAction "wsreset.exe" "Clear Microsoft Store Cache" }
 
 Function Reset-Network {
     Show-Section "Reset Network Stack"
     If (-not (Confirm-Action "Are you sure you want to reset the entire network stack?")) { return }
     If (-not (Confirm-Action "This will reset network components and may disrupt connections. Continue?")) { return }
-    Run-Command "netsh int ip reset" "Network IP Stack Reset"
-    Run-Command "netsh winsock reset" "Winsock Reset"
-    Run-Command "ipconfig /flushdns" "Flush DNS Cache"
+    Invoke-CommandAction "netsh int ip reset" "Network IP Stack Reset"
+    Invoke-CommandAction "netsh winsock reset" "Winsock Reset"
+    Invoke-CommandAction "ipconfig /flushdns" "Flush DNS Cache"
     $SessionActions += "Reset entire network stack"
 }
 
-Function Rebuild-IconCache {
-    Show-Section "Rebuild Icon Cache"
+Function Reset-IconCache {
+    Show-Section "Reset Icon Cache"
     $iconCachePath = "$env:LOCALAPPDATA\IconCache.db"
     Write-Host "Warning: This will close all File Explorer windows and your desktop may temporarily disappear." -ForegroundColor Yellow
     if (Test-Path $iconCachePath) {
         if (-not (Confirm-Action "Proceed to terminate all explorer.exe processes? (y/n): ")) {
-            Write-Log "User cancelled explorer.exe termination for icon cache rebuild." "WARN"
-            $SessionActions += "Cancelled explorer.exe termination for icon cache rebuild"
-            Write-Host "Cancelled icon cache rebuild." -ForegroundColor Yellow
-            Pause-Continue
+            Write-Log "User cancelled explorer.exe termination for icon cache reset." "WARN"
+            $SessionActions += "Cancelled explorer.exe termination for icon cache reset"
+            Write-Host "Cancelled icon cache reset." -ForegroundColor Yellow
+            Wait-Continue
             return
         }
         Try {
             Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
             Remove-Item $iconCachePath -Force
             Write-Log "Icon cache deleted." "INFO"
-            $SessionActions += "Deleted and rebuilt icon cache"
-            Write-Host "$($Strings.Success): Icon cache deleted (reboot to rebuild)." -ForegroundColor Green
+            $SessionActions += "Deleted and reset icon cache"
+            Write-Host "$($Strings.Success): Icon cache deleted (reboot to reset)." -ForegroundColor Green
         }
         Catch {
             Write-Log "Icon cache removal failed. Error: $_" "ERROR"
@@ -252,7 +248,7 @@ Function Rebuild-IconCache {
     Pause-Continue
 }
 
-Function Reregister-WindowsApps {
+Function Reset-WindowsApps {
     If (-not (Confirm-Action $Strings.ConfirmAction)) { return }
     Try {
         Get-AppXPackage -AllUsers | Foreach-Object {
@@ -358,7 +354,7 @@ Function Test-NetworkDiagnostics {
 Function Show-DiskUsage {
     Show-Section "Disk Usage"
     Try {
-        Get-PSDrive -PSProvider FileSystem | Select-Object Name, Free, Used, @{Name="FreeGB";Expression={"{0:N2}" -f ($_.Free/1GB)}}, @{Name="UsedGB";Expression={"{0:N2}" -f ($_.Used/1GB)}} | Format-Table | Out-Host
+        Get-PSDrive -PSProvider FileSystem | Select-Object Name, Free, Used, @{Name = "FreeGB"; Expression = { "{0:N2}" -f ($_.Free / 1GB) } }, @{Name = "UsedGB"; Expression = { "{0:N2}" -f ($_.Used / 1GB) } } | Format-Table | Out-Host
         Write-Log "Displayed disk usage." "INFO"
         $SessionActions += "Displayed disk usage"
     }
@@ -370,7 +366,7 @@ Function Show-DiskUsage {
     Pause-Continue
 }
 
-Function Clean-TempFiles {
+Function Clear-TempFiles {
     Show-Section "Clean Temp Files"
     If (-not (Confirm-Action $Strings.ConfirmAction)) { return }
     Try {
@@ -407,7 +403,8 @@ Function Get-WindowsUpdates {
                 Write-Log "Failed to generate WindowsUpdate.log. Error: $_" "ERROR"
                 $SessionActions += "Failed to generate WindowsUpdate.log"
             }
-        } else {
+        }
+        else {
             Write-Host "Skipped generating WindowsUpdate.log." -ForegroundColor Yellow
             Write-Log "Skipped generating WindowsUpdate.log." "INFO"
             $SessionActions += "Skipped generating WindowsUpdate.log"
@@ -422,7 +419,7 @@ Function Get-WindowsUpdates {
 }
 
 # --- Check/Restart Critical Services ---
-Function Check-RestartCriticalServices {
+Function Test-RestartCriticalServices {
     Show-Section "Check & Restart Critical Windows Services"
     $criticalServices = @("wuauserv", "bits", "lanmanworkstation", "lanmanserver", "eventlog")
     foreach ($svc in $criticalServices) {
@@ -460,21 +457,21 @@ Function Check-RestartCriticalServices {
 # ----- MENU -----
 $menu = @{
     "1"  = @{Label = "Show Basic System Info"; Action = { Show-SystemInfo } }
-    "2"  = @{Label = "Create System Restore Point"; Action = { Create-RestorePoint } }
-    "3"  = @{Label = "Run System File Checker (SFC)"; Action = { Run-SFC } }
-    "4"  = @{Label = "Run DISM Health Restore"; Action = { Run-DISM } }
-    "5"  = @{Label = "Check Disk (chkdsk)"; Action = { Run-CHKDSK } }
+    "2"  = @{Label = "Create System Restore Point"; Action = { New-RestorePoint } }
+    "3"  = @{Label = "Run System File Checker (SFC)"; Action = { Invoke-SFC } }
+    "4"  = @{Label = "Run DISM Health Restore"; Action = { Invoke-DISM } }
+    "5"  = @{Label = "Check Disk (chkdsk)"; Action = { Invoke-CHKDSK } }
     "6"  = @{Label = "Reset Windows Update"; Action = { Reset-WindowsUpdate } }
     "7"  = @{Label = "Clear Microsoft Store Cache"; Action = { Reset-MicrosoftStore } }
     "8"  = @{Label = "Reset Network Stack"; Action = { Reset-Network } }
-    "9"  = @{Label = "Rebuild Icon Cache"; Action = { Rebuild-IconCache } }
-    "10" = @{Label = "Re-register All Windows Apps"; Action = { Reregister-WindowsApps } }
+    "9"  = @{Label = "Reset Icon Cache"; Action = { Reset-IconCache } }
+    "10" = @{Label = "Re-register All Windows Apps"; Action = { Reset-WindowsApps } }
     "11" = @{Label = "Repair Windows Store App"; Action = { Reset-WindowsStoreApp } }
     "12" = @{Label = "Run Network Diagnostics"; Action = { Test-NetworkDiagnostics } }
     "13" = @{Label = "Show Disk Usage"; Action = { Show-DiskUsage } }
-    "14" = @{Label = "Clean Temp Files"; Action = { Clean-TempFiles } }
+    "14" = @{Label = "Clean Temp Files"; Action = { Clear-TempFiles } }
     "15" = @{Label = "Check for Windows Updates"; Action = { Get-WindowsUpdates } }
-    "16" = @{Label = "Check & Restart Critical Services"; Action = { Check-RestartCriticalServices } }
+    "16" = @{Label = "Check & Restart Critical Services"; Action = { Test-RestartCriticalServices } }
     "H"  = @{Label = "Help/About"; Action = { Show-Help } }
     "Q"  = @{
         Label  = "Quit";
