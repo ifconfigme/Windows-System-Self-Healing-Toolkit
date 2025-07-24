@@ -1,83 +1,100 @@
-# Windows System Health Toolkit
+# WinSystemFirstAidKit.ps1
 
-*A thoughtful, modular, and transparent Windows repair & diagnostics script—curated for technical enthusiasts, creative professionals, and anyone who seeks to maintain harmony between human creativity and digital infrastructure.*
+*A robust, modular PowerShell toolkit for diagnosing and repairing Windows 10/11 systems—crafted for technical users, creative professionals, and anyone seeking clarity and confidence in their PC’s health.*
 
 ---
 
-## What Is This?
+## Overview
 
-**Windows System Health Toolkit** is an interactive PowerShell script designed to help you diagnose, repair, and rejuvenate your PC running Windows 10/11.
+**WinSystemFirstAidKit.ps1** is a comprehensive script designed to help users maintain and repair their Windows systems by running diagnostic checks, performing repairs, and resetting or reconfiguring key components.
 
-Rather than a blunt “fix-everything” hammer, this toolkit is a gentle companion: it explains what it’s doing, invites your consent for every step, and lets you choose only what you need—nothing more, nothing less.
-
-Whether you’re a developer seeking stability, a musician chasing low latency, or simply someone who wants their system to just work, this script aims to be your digital first aid kit—clear, safe, and robust.
+Whether you’re troubleshooting problems, ensuring system reliability before an important project, or simply want to keep your PC in optimal condition, this toolkit provides clarity, transparency, and user agency at every step.
 
 ---
 
 ## Features
 
-- **Menu-driven:** Select which tasks to run; skip what you don’t need.
-- **Human-friendly output:** Each step is explained—no black boxes.
-- **Safe by design:** Offers to create a System Restore Point before major changes.
-- **Comprehensive:** Repairs system files, Windows image, network stack, Windows Store, icons, and more.
-- **Diagnostics:** Get basic system info in one click.
-- **Modular:** Easily add, remove, or customize features to suit your needs.
+- **Admin rights check:** Script ensures it’s run with proper privileges.
+- **Logging:** All actions are logged to a timestamped file, with levels (`INFO`, `WARN`, `ERROR`) for easy review.
+- **Menu-driven interface:** Select only the diagnostics or repairs you need.
+- **Modular design:** Easily extend the toolkit with new or custom modules.
+- **Human-friendly prompts:** Confirm before impactful actions; help/about menu built in.
+- **Localization-ready:** All user-facing strings are centralized for easy translation.
+- **Versioned & auditable:** Includes versioning and robust feedback.
 - **No forced reboots:** You’re always in control.
 
 ---
 
-## Included Functions
+## Architecture & Key Sections
 
-- View key system info
-- Create a System Restore Point
+- **Settings:** Script name, version, and log file location.
+- **Localization Strings:** All messages and prompts for easy adaptation.
+- **Logging Functions:** Centralized logging to both file and console, with colored output for severity.
+- **Admin Rights Check:** Exits gracefully if not run as administrator.
+- **Utility Functions:** Includes confirmation prompts, pause, and user-friendly section headers.
+- **Repair & Diagnostic Functions:**
+  - **Show-SystemInfo:** Displays key system information.
+  - **Create-RestorePoint:** Safely creates a Windows restore point.
+  - **Run-SFC:** Repairs missing or corrupted files.
+  - **Run-DISM:** Repairs Windows image corruption.
+  - **Run-CHKDSK:** Checks and fixes file system errors.
+  - **Reset-WindowsUpdate:** Repairs Windows Update services.
+  - **Reset-MicrosoftStore:** Clears Microsoft Store cache.
+  - **Reset-Network:** Resets the network stack.
+  - **Rebuild-IconCache:** Rebuilds the Windows icon cache.
+  - **Reregister-WindowsApps:** Re-registers all Windows apps.
+  - **Reset-WindowsStoreApp:** Repairs the Windows Store app itself.
+  - **Show-Help:** In-script documentation and help.
+- **Main Menu Loop:** Choose actions interactively; includes Help/About and Quit (with log file location).
+
+---
+
+## Usage
+
+1. **Download** [`WinSystemFirstAidKit.ps1`](./WinSystemFirstAidKit.ps1).
+2. **Right-click** the file and select **Run with PowerShell**  
+   *(or run from an elevated PowerShell terminal)*.
+3. **Choose** desired actions from the interactive menu.
+4. **Follow prompts**—the script explains each step and always seeks confirmation for impactful changes.
+5. **Reboot** after major repairs for best results.
+
+---
+
+## Example Actions
+
+- View basic system info
+- Create a system restore point
 - Run System File Checker (`sfc /scannow`)
 - Repair Windows image with DISM
-- Scan and fix disk errors (`chkdsk`)
+- Scan/fix disk errors (`chkdsk`)
 - Reset Windows Update components
 - Clear Microsoft Store cache
 - Reset the network stack
 - Rebuild icon cache
-- Re-register all Windows apps
+- Re-register Windows apps
 - Repair Windows Store app
-
----
-
-## How To Use
-
-1. **Download** the script:  
-   [`WinHealthToolkit.ps1`](./WinHealthToolkit.ps1)
-
-2. **Right-click** the file and select  
-   **Run with PowerShell**  
-   *(or run it from an elevated PowerShell terminal)*
-
-3. **Choose** the repairs or diagnostics you want from the interactive menu.
-
-4. **Follow prompts**—the script will guide you and explain each step.
-
-5. **Reboot** after any major repairs for best results.
 
 ---
 
 ## Who Should Use This?
 
-- Creators (musicians, artists, writers) seeking a “quiet” machine for their flow
-- Technologists who value transparency and control
-- Power users who want to maintain or revive a Windows system without risky guesswork
+- **Creators:** Musicians, artists, writers—anyone seeking a “quiet” and reliable system.
+- **Technologists:** Those who value transparency, control, and reproducibility.
+- **Power Users:** Anyone maintaining, repairing, or prepping a Windows system for peak performance.
 
 ---
 
 ## Philosophy
 
-This toolkit is inspired by the conviction that technical tools should foster understanding, not mystery; empower users, not alienate them.
+This toolkit is founded on the principle that technical tools should foster understanding, not mystery; empower users, not alienate them.  
 A healthy system isn’t just fast—it’s calm, reliable, and invisible, quietly supporting your best work.
 
 ---
 
 ## Credits
 
-Created by **Daniel Monbrod** and [ChatGPT4.1](https://openai.com/chatgpt)  
-*(with gratitude for the open source and creative communities that make digital resilience possible)*
+Created by **Daniel Monbrod** and [ChatGPT](https://openai.com/chatgpt)  
+*With gratitude to the open source and Windows communities that inspire digital resilience and transparency.*
 
 ---
 
@@ -89,9 +106,14 @@ MIT License
 
 ## Contribute
 
-If you have ideas, improvements, or new diagnostics to add, open an issue or submit a pull request.
-All thoughtful contributions—technical, editorial, or philosophical—are welcome.
+Suggestions, issues, improvements, and pull requests are welcome!  
 
 ---
 
-*May your system be swift, your sessions uninterrupted, and your curiosity never exhausted.*
+## Feedback
+
+Did this script help you, or inspire a new tool? Let us know—your insights help keep the project alive and growing.
+
+---
+
+*May your system be smooth, your sessions uninterrupted, and your curiosity never exhausted.*
