@@ -151,7 +151,7 @@ Function Invoke-CommandAction {
         $SessionActions += "$desc failed"
         Write-Host "$($Strings.Failure): $desc" -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Invoke-SFC { Invoke-CommandAction "sfc /scannow" "System File Checker (SFC)" }
@@ -174,7 +174,7 @@ Function Invoke-CHKDSK {
         $SessionActions += "CHKDSK failed on $drive drive"
         Write-Host "$($Strings.Failure): Check Disk on $drive." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Reset-WindowsUpdate {
@@ -200,7 +200,7 @@ Function Reset-WindowsUpdate {
         $SessionActions += "Failed to reset Windows Update components"
         Write-Host "$($Strings.Failure): Windows Update reset." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Reset-MicrosoftStore { Invoke-CommandAction "wsreset.exe" "Clear Microsoft Store Cache" }
@@ -245,7 +245,7 @@ Function Reset-IconCache {
         $SessionActions += "Icon cache not found (nothing done)"
         Write-Host "Icon cache not found. Skipped." -ForegroundColor Yellow
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Reset-WindowsApps {
@@ -263,7 +263,7 @@ Function Reset-WindowsApps {
         $SessionActions += "Failed to re-register Windows apps"
         Write-Host "$($Strings.Failure): Re-register Windows Apps." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Reset-WindowsStoreApp {
@@ -287,14 +287,14 @@ Function Reset-WindowsStoreApp {
         $SessionActions += "Failed to reset Windows Store app"
         Write-Host "$($Strings.Failure): Windows Store app reset." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Show-Help {
     Show-Section $Strings.HelpTitle
     Write-Host $Strings.HelpBody -ForegroundColor White
     $SessionActions += "Viewed help/about"
-    Pause-Continue
+    Wait-Continue
 }
 
 # --- Network Diagnostics ---
@@ -347,7 +347,7 @@ Function Test-NetworkDiagnostics {
         Write-Log "Error retrieving default gateway: $_" "ERROR"
         $SessionActions += "Failed to get default gateway"
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 # --- Disk Usage & Cleanup ---
@@ -363,7 +363,7 @@ Function Show-DiskUsage {
         $SessionActions += "Failed to display disk usage"
         Write-Host "Failed to display disk usage." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 Function Clear-TempFiles {
@@ -381,7 +381,7 @@ Function Clear-TempFiles {
         $SessionActions += "Failed to clean temp files"
         Write-Host "$($Strings.Failure): Temp files not cleaned." -ForegroundColor Red
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 # --- Windows Update Status ---
@@ -415,7 +415,7 @@ Function Get-WindowsUpdates {
         Write-Log "Unexpected error in Get-WindowsUpdates: $_" "ERROR"
         $SessionActions += "Unexpected error in Get-WindowsUpdates"
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 # --- Check/Restart Critical Services ---
@@ -451,7 +451,7 @@ Function Test-RestartCriticalServices {
             Write-Host "Service $svc not found." -ForegroundColor Yellow
         }
     }
-    Pause-Continue
+    Wait-Continue
 }
 
 # ----- MENU -----
@@ -514,6 +514,6 @@ do {
     }
     else {
         Write-Host $Strings.InvalidSelection -ForegroundColor Yellow
-        Pause-Continue
+        Wait-Continue
     }
 } while ($true)
