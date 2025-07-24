@@ -6,15 +6,27 @@
     modular design, robust error handling, a Help menu, and a clear version identifier.
     Ready for collaborative extension and future localization.
 .NOTES
-    Version: 1.0.0
+    Version: 2.0.1
     Author: Daniel Monbrod & ChatGPT
     Date: 2025-07-24
 #>
 
 # ----- SETTINGS -----
-$ScriptVersion = "1.0.0"
+$SessionActions = @()
+$ScriptVersion = "2.0.1"
 $ScriptName    = "Windows System First Aid Toolkit"
-$LogFile       = Join-Path -Path $env:TEMP -ChildPath ("WinSystemFirstAid-{0}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$defaultLogFile = Join-Path -Path $env:TEMP -ChildPath ("WinSystemFirstAid-{0}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$logPathInput = Read-Host "Enter a custom log file path (e.g., C:\Logs\MyToolkit.log), or press Enter to use the default in $env:TEMP:"
+if ([string]::IsNullOrWhiteSpace($logPathInput)) {
+    $LogFile = $defaultLogFile
+} else {
+    $resolvedPath = Resolve-Path -Path $logPathInput -ErrorAction SilentlyContinue
+    if ($resolvedPath) {
+        $LogFile = $resolvedPath.Path
+    } else {
+        $LogFile = $logPathInput
+    }
+}
 
 # ----- STRINGS FOR LOCALIZATION -----
 $Strings = @{
@@ -137,14 +149,18 @@ Function Run-DISM { Run-Command "DISM /Online /Cleanup-Image /RestoreHealth" "DI
 
 Function Run-CHKDSK {
     Show-Section "Check Disk"
-    If (-not (Confirm-Action $Strings.ConfirmAction)) { return }
+    $drive = Read-Host "Enter the drive letter to check (e.g., C), or press Enter for default (C):"
+    if (-not $drive) { $drive = "C" }
+    $result = Confirm-Action "Run CHKDSK on drive $drive:? (y = yes, m = menu, q = quit): "
+    if ($result -eq "Menu") { return }
+    if ($result -eq "Quit") { Exit }
     Try {
-        Invoke-Expression "chkdsk C: /f"
-        Write-Log "Ran Check Disk." "INFO"
-        Write-Host "$($Strings.Success): Check Disk run (may need reboot)." -ForegroundColor Green
+        Invoke-Expression "chkdsk $drive`: /f"
+        Write-Log "Ran Check Disk on $drive:" "INFO"
+        Write-Host "$($Strings.Success): Check Disk run on $drive: (may need reboot)." -ForegroundColor Green
     } Catch {
-        Write-Log "Check Disk failed. Error: $_" "ERROR"
-        Write-Host "$($Strings.Failure): Check Disk." -ForegroundColor Red
+        Write-Log "Check Disk failed on $drive:. Error: $_" "ERROR"
+        Write-Host "$($Strings.Failure): Check Disk on $drive:." -ForegroundColor Red
     }
     Pause-Continue
 }
@@ -366,12 +382,28 @@ $menu = @{
     "15" = @{Label="Check for Windows Updates";      Action={Check-WindowsUpdates}}
     "16" = @{Label="Check & Restart Critical Services"; Action={Check-RestartCriticalServices}}
     "H"  = @{Label="Help/About";                     Action={Show-Help}}
-    "Q"  = @{Label="Quit";                           Action={
+    "Q" = @{ 
+    Label="Quit";
+    Action={
+        Write-Host "`n==== Session Summary ====" -ForegroundColor Cyan
+        if ($SessionActions.Count -eq 0) {
+            Write-Host "No actions performed this session." -ForegroundColor Yellow
+        } else {
+            $SessionActions | ForEach-Object { Write-Host "• $_" -ForegroundColor White }
+        }
+        # Log summary to file as well
+        Add-Content -Path $LogFile -Value "`n==== Session Summary ===="
+        if ($SessionActions.Count -eq 0) {
+            Add-Content -Path $LogFile -Value "No actions performed this session."
+        } else {
+            $SessionActions | ForEach-Object { Add-Content -Path $LogFile -Value "• $_" }
+        }
         Write-Log $Strings.ExitMessage "INFO"
-        Stop-Transcript | Out-Null
-        Write-Host "$($Strings.LogFileSaved) $LogFile" -ForegroundColor Cyan
+        Write-Host "`n$($Strings.LogFileSaved) $LogFile" -ForegroundColor Cyan
+        Write-Host "`nThank you for using Windows System First Aid Toolkit!" -ForegroundColor Green
+        Write-Host ""  # Final blank line
         Exit
-    }}
+    }
 }
 
 # ----- MAIN MENU LOOP -----
