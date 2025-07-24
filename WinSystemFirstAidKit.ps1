@@ -22,7 +22,7 @@ $Strings = @{
     Version              = $ScriptVersion
     NeedAdmin            = "This script must be run as Administrator. Please restart PowerShell as Administrator and try again."
     PressEnter           = "Press Enter to continue..."
-    MainMenu             = "Choose an option (enter number):"
+    MainMenu             = "Choose an option (enter number, H for help, Q to quit):"
     InvalidSelection     = "Invalid selection."
     ExitMessage          = "Exiting... Thank you for using the Toolkit."
     LoggingOn            = "Logging enabled. All actions will be recorded to:"
@@ -244,7 +244,7 @@ $menu = @{
 do {
     Show-Section "$($Strings.ScriptName) — v$($Strings.Version)"
     Write-Host $Strings.MainMenu
-    foreach ($key in $menu.Keys) {
+    foreach ($key in ($menu.Keys | Sort-Object { if ($_ -match '^\d+$') { [int]$_ } else { [int]::MaxValue } }, {$_.ToString()})) {
         Write-Host "  $key`t$($menu[$key].Label)"
     }
     $choice = Read-Host "Your choice"
