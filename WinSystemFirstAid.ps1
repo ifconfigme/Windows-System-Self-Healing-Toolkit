@@ -1,14 +1,54 @@
 <#
 .SYNOPSIS
-    Windows System Health Toolkit (Interactive)
+    Windows System Health Toolkit (Interactive, Robust)
 .DESCRIPTION
-    Menu-driven, modular, and safe repair & diagnostic script for Windows 10/11.
-    Designed for thoughtful users who want clarity, transparency, and control.
+    Modular, safe, and transparent repair & diagnostics script for Windows 10/11.
+    Checks for admin rights, logs all actions, offers a menu-driven interface,
+    and is ready for future extensibility and localization.
 .NOTES
-    Author: Daniel Monbrod & ChatGPT 4.1
+    Author: Daniel Monbrod & ChatGPT-4.1
     Date: 2025-07-24
 #>
 
+# --- Localization-ready strings ---
+$Strings = @{
+    ScriptName        = "Windows System Health Toolkit"
+    NeedAdmin         = "This script must be run as Administrator. Please restart PowerShell as Administrator and try again."
+    PressEnter        = "Press Enter to continue..."
+    MainMenu          = "Choose an option (enter number):"
+    InvalidSelection  = "Invalid selection."
+    ExitMessage       = "Exiting... Thank you for using the Toolkit."
+    HelpTitle         = "Help & About"
+    HelpBody          = @"
+This toolkit offers interactive repair and diagnostics for Windows 10/11.
+Menu options include: system info, restore point creation, file & image repair, update/network resets, app fixes, and more.
+
+- Select an item to see its action, then follow the prompts.
+- Logs all actions to a file for review.
+- Modular for easy extension.
+
+Most tasks require admin rights. Use at your own discretion—no changes are made without your consent.
+
+For documentation, contributions, or updates, visit the project repository.
+"@
+    LoggingOn         = "Logging enabled. All actions will be recorded to:"
+    LoggingOff        = "Logging is disabled."
+    LogFileSaved      = "Log file saved as:"
+}
+
+# --- Admin check ---
+If (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host $Strings.NeedAdmin -ForegroundColor Red
+    Read-Host $Strings.PressEnter
+    Exit
+}
+
+# --- Logging setup ---
+$LogFile = Join-Path -Path $env:TEMP -ChildPath ("WinHealthToolkit-{0}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+Start-Transcript -Path $LogFile -Append | Out-Null
+Write-Host "$($Strings.LoggingOn) $LogFile" -ForegroundColor Cyan
+
+# --- Helper functions ---
 function Write-Section {
     param([string]$msg)
     Write-Host "`n==== $msg ==== `n" -ForegroundColor Cyan
@@ -16,7 +56,7 @@ function Write-Section {
 
 function Pause-Continue {
     Write-Host ""
-    Read-Host "Press Enter to continue..."
+    Read-Host $Strings.PressEnter | Out-Null
 }
 
 function Run-Command {
@@ -34,7 +74,11 @@ function Run-Command {
 
 function Show-SystemInfo {
     Write-Section "Basic System Info"
-    systeminfo | Select-String "OS Name|OS Version|System Type|Total Physical Memory|Available Physical Memory"
+    Try {
+        systeminfo | Select-String "OS Name|OS Version|System Type|Total Physical Memory|Available Physical Memory"
+    } Catch {
+        Write-Host "Unable to retrieve system info." -ForegroundColor Yellow
+    }
     Pause-Continue
 }
 
@@ -45,7 +89,7 @@ function Create-RestorePoint {
         Checkpoint-Computer -Description "WinHealthToolkit" -RestorePointType "MODIFY_SETTINGS"
         Write-Host "Restore point created." -ForegroundColor Green
     } Catch {
-        Write-Host "Failed to create restore point. (May require admin or be disabled.)" -ForegroundColor Yellow
+        Write-Host "Failed to create restore point (may require admin or be disabled)." -ForegroundColor Yellow
     }
     Pause-Continue
 }
@@ -116,7 +160,13 @@ function Reset-WindowsStoreApp {
     Pause-Continue
 }
 
-# ---- Menu System ----
+function Show-Help {
+    Write-Section $Strings.HelpTitle
+    Write-Host $Strings.HelpBody -ForegroundColor White
+    Pause-Continue
+}
+
+# --- Main menu structure ---
 $menu = @{
     "1" = @{Label="Show Basic System Info";         Action={Show-SystemInfo}}
     "2" = @{Label="Create System Restore Point";    Action={Create-RestorePoint}}
@@ -129,13 +179,19 @@ $menu = @{
     "9" = @{Label="Rebuild Icon Cache";             Action={Rebuild-IconCache}}
    "10" = @{Label="Re-register All Windows Apps";   Action={Reregister-WindowsApps}}
    "11" = @{Label="Repair Windows Store App";       Action={Reset-WindowsStoreApp}}
-   "Q"  = @{Label="Quit";                           Action={Write-Host "Exiting..."; exit}}
+   "H"  = @{Label="Help/About";                     Action={Show-Help}}
+   "Q"  = @{Label="Quit";                           Action={
+        Write-Host $Strings.ExitMessage -ForegroundColor Cyan
+        Stop-Transcript | Out-Null
+        Write-Host "$($Strings.LogFileSaved) $LogFile" -ForegroundColor Cyan
+        exit
+    }}
 }
 
-# Main menu loop
+# --- Main menu loop ---
 do {
-    Write-Section "Windows System Health Toolkit"
-    Write-Host "Choose an option (enter number):"
+    Write-Section $Strings.ScriptName
+    Write-Host $Strings.MainMenu
     foreach ($key in $menu.Keys) {
         Write-Host "  $key`t$($menu[$key].Label)"
     }
@@ -143,6 +199,7 @@ do {
     if ($menu.ContainsKey($choice)) {
         & $menu[$choice].Action
     } else {
-        Write-Host "Invalid selection." -ForegroundColor Yellow
+        Write-Host $Strings.InvalidSelection -ForegroundColor Yellow
+        Pause-Continue
     }
 } while ($true)
