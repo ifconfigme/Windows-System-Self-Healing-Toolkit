@@ -130,4 +130,4 @@ Suggestions, issues, improvements, and pull requests are welcome!
 
 ---
 
-*May your system be smooth, your sessions uninterrupted, and your curiosity never exhausted.*
+
