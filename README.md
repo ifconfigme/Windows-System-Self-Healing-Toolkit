@@ -88,14 +88,13 @@ Whether you’re troubleshooting problems, ensuring system reliability before an
 ## Philosophy
 
 This toolkit is founded on the principle that technical tools should foster understanding, not mystery; empower users, not alienate them.  
-A healthy system isn’t just fast—it’s calm, reliable, and invisible, quietly supporting your best work.
+A healthy system isn’t just fast it’s calm, reliable, and invisible, quietly supporting your best work.
 
 ---
 
 ## Credits
 
-Created by **Daniel Monbrod** and [ChatGPT](https://openai.com/chatgpt)  
-*With gratitude to the open source and Windows communities that inspire digital resilience and transparency.*
+**Daniel Monbrod**
 
 ---
 
